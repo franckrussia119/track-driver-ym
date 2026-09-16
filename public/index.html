@@ -157,8 +157,9 @@
     transition: background .15s, color .15s;
   }
   nav button.active {
-    color: #fff;
+    color: var(--navy);
     background: var(--bg);
+    font-weight: 700;
   }
   main {
     max-width: 1000px;
@@ -431,7 +432,7 @@
           <input id="ci-deadline" type="date">
         </div>
 
-        <div id="client-wrap" style="display:none;">
+        <div id="client-wrap">
           <div class="row">
             <div>
               <label>Nom du Client</label>
@@ -649,12 +650,9 @@
   }
 
   // ---------------- Check-in form ----------------
-  const CLIENT_STATUSES = ["loaded_export", "loaded_import"];
-
   $("ci-status").addEventListener("change", () => {
     const val = $("ci-status").value;
     $("deadline-wrap").style.display = val === "empty_yard" ? "block" : "none";
-    $("client-wrap").style.display = CLIENT_STATUSES.includes(val) ? "block" : "none";
   });
 
   $("checkin-form").addEventListener("submit", async (e) => {
@@ -670,8 +668,8 @@
       eirNo: $("ci-eir").value.trim(),
       location: $("ci-location").value.trim(),
       deadline: status === "empty_yard" ? ($("ci-deadline").value || "") : "",
-      clientName: CLIENT_STATUSES.includes(status) ? $("ci-client").value.trim() : "",
-      amountReceived: CLIENT_STATUSES.includes(status) && $("ci-amount").value !== "" ? Number($("ci-amount").value) : null,
+      clientName: $("ci-client").value.trim(),
+      amountReceived: $("ci-amount").value !== "" ? Number($("ci-amount").value) : null,
       note: $("ci-note").value.trim(),
     };
     try {
@@ -679,7 +677,6 @@
       toast("Point enregistré");
       $("checkin-form").reset();
       $("deadline-wrap").style.display = "none";
-      $("client-wrap").style.display = "none";
       populateStatusSelects();
       await refreshCheckins();
     } catch (err) {
