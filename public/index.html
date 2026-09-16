@@ -707,7 +707,12 @@
 
   function renderDashboard() {
     const latest = latestPerTruck();
-    const activeTrucks = trucks.filter(t => t.active !== false);
+    // Ordre alphabetique/numerique stable — ne change jamais selon l'activite,
+    // pour que chaque camion garde toujours la meme position dans le tableau.
+    const activeTrucks = trucks
+      .filter(t => t.active !== false)
+      .slice()
+      .sort((a, b) => a.plate.localeCompare(b.plate, "fr", { numeric: true, sensitivity: "base" }));
     const tbody = document.querySelector("#dashboard-table tbody");
     tbody.innerHTML = "";
     $("dashboard-empty").style.display = activeTrucks.length === 0 ? "block" : "none";
@@ -718,12 +723,6 @@
       const info = riskInfo(c);
       if (info.risk) riskCount++;
       return { truck, c, info };
-    });
-    rows.sort((a, b) => {
-      if (a.info.risk !== b.info.risk) return a.info.risk ? -1 : 1;
-      const at = a.c ? new Date(a.c.timestamp).getTime() : 0;
-      const bt = b.c ? new Date(b.c.timestamp).getTime() : 0;
-      return bt - at;
     });
 
     for (const { truck, c, info } of rows) {
