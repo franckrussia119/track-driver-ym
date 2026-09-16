@@ -12,7 +12,10 @@ data stored in a local JSON file — no external database required.
 - **Tableau de Bord** — live table of every truck's latest status, with
   containers overdue past your detention-risk threshold highlighted in red.
 - **Historique** — look up where a truck was on any past date, plus a full
-  filterable log with CSV export.
+  filterable log (by truck, driver, status, and date range) with CSV
+  export. Use the driver filter with the "7 derniers jours" / "30 derniers
+  jours" presets (or your own date range) to pull one driver's activity
+  over a week, a month, or any period you choose.
 - **Camions** — manage your fleet list (add/edit/deactivate trucks and
   drivers).
 

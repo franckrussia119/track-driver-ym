@@ -495,12 +495,23 @@
     </div>
 
     <div class="card">
-      <h2>Journal complet</h2>
+      <h2>Journal complet &amp; historique d'un chauffeur</h2>
+      <p class="muted" style="margin-top:-6px;">Filtrez par chauffeur et par période pour voir l'activité d'un chauffeur sur une semaine, un mois, ou toute autre période.</p>
       <div class="row">
         <div><label>Filtrer par camion</label><select id="log-truck-filter"><option value="">Tous les camions</option></select></div>
+        <div><label>Filtrer par chauffeur</label><select id="log-driver-filter"><option value="">Tous les chauffeurs</option></select></div>
         <div><label>Filtrer par statut</label><select id="log-status-filter"><option value="">Tous les statuts</option></select></div>
       </div>
+      <div class="row">
+        <div><label>Du</label><input id="log-date-from" type="date"></div>
+        <div><label>Au</label><input id="log-date-to" type="date"></div>
+      </div>
       <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <button class="small" id="preset-7d">7 derniers jours</button>
+        <button class="small" id="preset-30d">30 derniers jours</button>
+        <button class="small" id="preset-clear">Effacer les dates</button>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
         <a class="secondary" id="export-csv" href="/api/export/csv">Exporter en CSV</a>
         <span class="muted" id="log-count"></span>
       </div>
@@ -638,9 +649,18 @@
     const opts = active.map(t =>
       `<option value="${t.id}">${escapeHtml(t.plate)} — ${escapeHtml(t.driver || "sans chauffeur")}</option>`
     ).join("");
-    $("ci-truck").innerHTML = opts || `<option value="">Aucun camion — ajoutez-en un dans l'onglet Camions</option>`;
-    $("hist-truck").innerHTML = opts;
-    $("log-truck-filter").innerHTML = `<option value="">Tous les camions</option>` + opts;
+
+    const applyPreserving = (el, html) => {
+      const prevValue = el.value;
+      el.innerHTML = html;
+      if (prevValue && active.some(t => t.id === prevValue)) {
+        el.value = prevValue;
+      }
+    };
+
+    applyPreserving($("ci-truck"), opts || `<option value="">Aucun camion — ajoutez-en un dans l'onglet Camions</option>`);
+    applyPreserving($("hist-truck"), opts);
+    applyPreserving($("log-truck-filter"), `<option value="">Tous les camions</option>` + opts);
   }
 
   function populateStatusSelects() {
@@ -813,12 +833,31 @@
     box.innerHTML = html;
   });
 
-  function renderLogTable() {
+  function buildLogQuery() {
+    const params = new URLSearchParams();
     const truckFilter = $("log-truck-filter").value;
+    const driverFilter = $("log-driver-filter").value;
     const statusFilter = $("log-status-filter").value;
-    let rows = checkins.slice();
-    if (truckFilter) rows = rows.filter(c => c.truckId === truckFilter);
-    if (statusFilter) rows = rows.filter(c => c.status === statusFilter);
+    const dateFrom = $("log-date-from").value;
+    const dateTo = $("log-date-to").value;
+    if (truckFilter) params.set("truckId", truckFilter);
+    if (driverFilter) params.set("driver", driverFilter);
+    if (statusFilter) params.set("status", statusFilter);
+    if (dateFrom) params.set("dateFrom", dateFrom);
+    if (dateTo) params.set("dateTo", dateTo);
+    params.set("limit", "5000");
+    return params;
+  }
+
+  async function renderLogTable() {
+    const params = buildLogQuery();
+    let rows = [];
+    try {
+      rows = await api("/api/checkins?" + params.toString());
+    } catch (err) {
+      toast("Impossible de charger le journal.", true);
+      return;
+    }
     const tbody = document.querySelector("#log-table tbody");
     tbody.innerHTML = "";
     $("log-count").textContent = rows.length + " enregistrement(s)";
@@ -840,13 +879,37 @@
       tbody.appendChild(tr);
     }
     // Garder le lien d'export cohérent avec les filtres actifs
-    const params = new URLSearchParams();
-    if (truckFilter) params.set("truckId", truckFilter);
-    if (statusFilter) params.set("status", statusFilter);
-    $("export-csv").href = "/api/export/csv" + (params.toString() ? "?" + params.toString() : "");
+    const exportParams = buildLogQuery();
+    exportParams.delete("limit");
+    $("export-csv").href = "/api/export/csv" + (exportParams.toString() ? "?" + exportParams.toString() : "");
   }
+
   $("log-truck-filter").addEventListener("change", renderLogTable);
+  $("log-driver-filter").addEventListener("change", renderLogTable);
   $("log-status-filter").addEventListener("change", renderLogTable);
+  $("log-date-from").addEventListener("change", renderLogTable);
+  $("log-date-to").addEventListener("change", renderLogTable);
+
+  function isoDateDaysAgo(n) {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  }
+  $("preset-7d").addEventListener("click", () => {
+    $("log-date-from").value = isoDateDaysAgo(6);
+    $("log-date-to").value = isoDateDaysAgo(0);
+    renderLogTable();
+  });
+  $("preset-30d").addEventListener("click", () => {
+    $("log-date-from").value = isoDateDaysAgo(29);
+    $("log-date-to").value = isoDateDaysAgo(0);
+    renderLogTable();
+  });
+  $("preset-clear").addEventListener("click", () => {
+    $("log-date-from").value = "";
+    $("log-date-to").value = "";
+    renderLogTable();
+  });
 
   // ---------------- Trucks tab ----------------
   let editingTruckId = null;
@@ -970,8 +1033,17 @@
   async function refreshCheckins() {
     checkins = await api("/api/checkins?limit=2000");
     renderDashboard();
-    renderLogTable();
     refreshLocationSuggestions();
+  }
+
+  async function refreshDrivers() {
+    let drivers = [];
+    try { drivers = await api("/api/drivers"); } catch (e) { return; }
+    const el = $("log-driver-filter");
+    const prevValue = el.value;
+    const opts = drivers.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+    el.innerHTML = `<option value="">Tous les chauffeurs</option>` + opts;
+    if (prevValue && drivers.includes(prevValue)) el.value = prevValue;
   }
 
   async function refreshSettings() {
@@ -985,12 +1057,18 @@
     populateStatusSelects();
     $("hist-date").value = new Date().toISOString().slice(0, 10);
     try {
-      await Promise.all([refreshTrucks(), refreshCheckins(), refreshSettings()]);
+      await Promise.all([refreshTrucks(), refreshCheckins(), refreshSettings(), refreshDrivers()]);
+      await renderLogTable();
     } catch (err) {
       toast("Impossible de contacter le serveur.", true);
     }
     // Rafraîchissement périodique pour rester à jour si plusieurs personnes utilisent l'outil
-    setInterval(() => { refreshTrucks().catch(() => {}); refreshCheckins().catch(() => {}); }, 15000);
+    setInterval(() => {
+      refreshTrucks().catch(() => {});
+      refreshCheckins().catch(() => {});
+      refreshDrivers().catch(() => {});
+      renderLogTable().catch(() => {});
+    }, 15000);
   }
 
   init();

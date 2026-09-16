@@ -151,6 +151,13 @@ app.get("/api/trucks", (req, res) => {
   res.json(db.trucks);
 });
 
+app.get("/api/drivers", (req, res) => {
+  const names = new Set();
+  db.trucks.forEach((t) => { if (t.driver && t.driver.trim()) names.add(t.driver.trim()); });
+  db.checkins.forEach((c) => { if (c.driver && c.driver.trim()) names.add(c.driver.trim()); });
+  res.json(Array.from(names).sort((a, b) => a.localeCompare(b, "fr")));
+});
+
 app.post("/api/trucks", async (req, res) => {
   const { plate, driver, contractor } = req.body || {};
   if (!plate || !String(plate).trim()) {
@@ -184,10 +191,27 @@ app.put("/api/trucks/:id", async (req, res) => {
 // API — Points de passage (check-ins)
 // ---------------------------------------------------------------------------
 
-app.get("/api/checkins", (req, res) => {
+function filterCheckins(query) {
   let rows = db.checkins.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  if (req.query.truckId) rows = rows.filter((c) => c.truckId === req.query.truckId);
-  if (req.query.status) rows = rows.filter((c) => c.status === req.query.status);
+  if (query.truckId) rows = rows.filter((c) => c.truckId === query.truckId);
+  if (query.status) rows = rows.filter((c) => c.status === query.status);
+  if (query.driver) {
+    const wanted = String(query.driver).trim().toLowerCase();
+    rows = rows.filter((c) => (c.driver || "").trim().toLowerCase() === wanted);
+  }
+  if (query.dateFrom) {
+    const from = new Date(query.dateFrom + "T00:00:00").getTime();
+    if (!isNaN(from)) rows = rows.filter((c) => new Date(c.timestamp).getTime() >= from);
+  }
+  if (query.dateTo) {
+    const to = new Date(query.dateTo + "T23:59:59.999").getTime();
+    if (!isNaN(to)) rows = rows.filter((c) => new Date(c.timestamp).getTime() <= to);
+  }
+  return rows;
+}
+
+app.get("/api/checkins", (req, res) => {
+  const rows = filterCheckins(req.query);
   const limit = parseInt(req.query.limit, 10) || 1000;
   res.json(rows.slice(0, limit));
 });
@@ -261,10 +285,7 @@ const STATUS_LABELS = {
 };
 
 app.get("/api/export/csv", (req, res) => {
-  const { truckId, status } = req.query;
-  let rows = db.checkins.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  if (truckId) rows = rows.filter((c) => c.truckId === truckId);
-  if (status) rows = rows.filter((c) => c.status === status);
+  const rows = filterCheckins(req.query);
 
   const header = [
     "Date/Heure", "Plaque Camion", "Chauffeur", "Statut",
