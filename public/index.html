@@ -405,8 +405,19 @@
         <label>Camion</label>
         <select id="ci-truck" required></select>
 
-        <label>Statut</label>
-        <select id="ci-status" required></select>
+        <div class="row">
+          <div>
+            <label>Statut</label>
+            <select id="ci-status" required></select>
+          </div>
+          <div>
+            <label>Période</label>
+            <select id="ci-period">
+              <option value="matin">🌅 Matin</option>
+              <option value="soir">🌆 Soir</option>
+            </select>
+          </div>
+        </div>
 
         <div class="row">
           <div>
@@ -503,21 +514,29 @@
         <div><label>Filtrer par statut</label><select id="log-status-filter"><option value="">Tous les statuts</option></select></div>
       </div>
       <div class="row">
+        <div><label>Filtrer par période</label><select id="log-period-filter"><option value="">Matin + Soir</option><option value="matin">🌅 Matin</option><option value="soir">🌆 Soir</option></select></div>
         <div><label>Du</label><input id="log-date-from" type="date"></div>
         <div><label>Au</label><input id="log-date-to" type="date"></div>
       </div>
       <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
         <button class="small" id="preset-7d">7 derniers jours</button>
         <button class="small" id="preset-30d">30 derniers jours</button>
+        <button class="small" id="preset-today">Aujourd'hui</button>
         <button class="small" id="preset-clear">Effacer les dates</button>
       </div>
       <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
         <a class="secondary" id="export-csv" href="/api/export/csv">Exporter en CSV</a>
+        <button class="secondary" id="generate-report">📋 Générer le Rapport WhatsApp</button>
         <span class="muted" id="log-count"></span>
       </div>
-      <div class="table-wrap" style="margin-top:12px;">
+      <div id="report-box" style="display:none; margin-top:14px;">
+        <label>Rapport prêt à copier</label>
+        <textarea id="report-text" rows="12" readonly style="font-family: 'Inter', monospace; font-size:13.5px;"></textarea>
+        <button class="primary" id="copy-report" type="button">Copier le texte</button>
+      </div>
+      <div class="table-wrap" style="margin-top:16px;">
         <table id="log-table" class="stack-table">
-          <thead><tr><th>Date/Heure</th><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>BL</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Remarque</th></tr></thead>
+          <thead><tr><th>Date/Heure</th><th>Période</th><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>BL</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Remarque</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -670,6 +689,11 @@
   }
 
   // ---------------- Check-in form ----------------
+  function defaultPeriod() {
+    return new Date().getHours() < 12 ? "matin" : "soir";
+  }
+  $("ci-period").value = defaultPeriod();
+
   $("ci-status").addEventListener("change", () => {
     const val = $("ci-status").value;
     $("deadline-wrap").style.display = val === "empty_yard" ? "block" : "none";
@@ -683,6 +707,7 @@
     const data = {
       truckId,
       status,
+      period: $("ci-period").value,
       containerNo: $("ci-container").value.trim(),
       blNo: $("ci-bl").value.trim(),
       eirNo: $("ci-eir").value.trim(),
@@ -696,6 +721,7 @@
       await api("/api/checkins", { method: "POST", body: JSON.stringify(data) });
       toast("Point enregistré");
       $("checkin-form").reset();
+      $("ci-period").value = defaultPeriod();
       $("deadline-wrap").style.display = "none";
       populateStatusSelects();
       await refreshCheckins();
@@ -838,15 +864,23 @@
     const truckFilter = $("log-truck-filter").value;
     const driverFilter = $("log-driver-filter").value;
     const statusFilter = $("log-status-filter").value;
+    const periodFilter = $("log-period-filter").value;
     const dateFrom = $("log-date-from").value;
     const dateTo = $("log-date-to").value;
     if (truckFilter) params.set("truckId", truckFilter);
     if (driverFilter) params.set("driver", driverFilter);
     if (statusFilter) params.set("status", statusFilter);
+    if (periodFilter) params.set("period", periodFilter);
     if (dateFrom) params.set("dateFrom", dateFrom);
     if (dateTo) params.set("dateTo", dateTo);
     params.set("limit", "5000");
     return params;
+  }
+
+  let lastLogRows = [];
+
+  function periodLabel(p) {
+    return p === "matin" ? "🌅 Matin" : p === "soir" ? "🌆 Soir" : "—";
   }
 
   async function renderLogTable() {
@@ -858,6 +892,7 @@
       toast("Impossible de charger le journal.", true);
       return;
     }
+    lastLogRows = rows;
     const tbody = document.querySelector("#log-table tbody");
     tbody.innerHTML = "";
     $("log-count").textContent = rows.length + " enregistrement(s)";
@@ -867,6 +902,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td data-label="Date/Heure">${fmtDateTime(c.timestamp)}</td>
+        <td data-label="Période">${periodLabel(c.period)}</td>
         <td data-label="Camion">${escapeHtml(c.plate)}</td>
         <td data-label="Chauffeur">${escapeHtml(c.driver || "—")}</td>
         <td data-label="Statut"><span class="badge ${meta ? meta.cls : 'neutral'}">${meta ? meta.label : c.status}</span></td>
@@ -882,11 +918,13 @@
     const exportParams = buildLogQuery();
     exportParams.delete("limit");
     $("export-csv").href = "/api/export/csv" + (exportParams.toString() ? "?" + exportParams.toString() : "");
+    $("report-box").style.display = "none";
   }
 
   $("log-truck-filter").addEventListener("change", renderLogTable);
   $("log-driver-filter").addEventListener("change", renderLogTable);
   $("log-status-filter").addEventListener("change", renderLogTable);
+  $("log-period-filter").addEventListener("change", renderLogTable);
   $("log-date-from").addEventListener("change", renderLogTable);
   $("log-date-to").addEventListener("change", renderLogTable);
 
@@ -905,10 +943,87 @@
     $("log-date-to").value = isoDateDaysAgo(0);
     renderLogTable();
   });
+  $("preset-today").addEventListener("click", () => {
+    $("log-date-from").value = isoDateDaysAgo(0);
+    $("log-date-to").value = isoDateDaysAgo(0);
+    renderLogTable();
+  });
   $("preset-clear").addEventListener("click", () => {
     $("log-date-from").value = "";
     $("log-date-to").value = "";
     renderLogTable();
+  });
+
+  // ---------------- Génération du rapport WhatsApp ----------------
+  function buildWhatsAppReport(rows) {
+    if (!rows.length) return "Aucun point enregistré pour cette sélection.";
+
+    const dateFrom = $("log-date-from").value;
+    const dateTo = $("log-date-to").value;
+    const periodFilter = $("log-period-filter").value;
+
+    let dateLabel;
+    const fmtLong = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    if (dateFrom && dateTo && dateFrom === dateTo) dateLabel = fmtLong(dateFrom);
+    else if (dateFrom && dateTo) dateLabel = fmtLong(dateFrom) + " → " + fmtLong(dateTo);
+    else dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    const periodTxt = periodFilter ? (periodFilter === "matin" ? " — 🌅 MATIN" : " — 🌆 SOIR") : "";
+
+    // Un seul point par camion : le plus récent dans la sélection actuelle
+    const byTruck = new Map();
+    rows.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach((c) => {
+      byTruck.set(c.truckId, c);
+    });
+    const sorted = Array.from(byTruck.values()).sort((a, b) => a.plate.localeCompare(b.plate, "fr", { numeric: true }));
+
+    let text = `📋 *RAPPORT FLOTTE*\n📅 ${dateLabel}${periodTxt}\n\n`;
+
+    const riskPlates = [];
+    for (const c of sorted) {
+      const meta = STATUS_MAP[c.status];
+      const info = riskInfo(c);
+      if (info.risk) riskPlates.push(c.plate);
+      text += `🚛 *${c.plate}*${c.driver ? " — " + c.driver : ""}\n`;
+      text += `${info.risk ? "🔴" : "▪️"} ${meta ? meta.label : c.status}\n`;
+      text += `📍 ${c.location || "Lieu non précisé"}\n`;
+      if (c.containerNo) text += `📦 ${c.containerNo}${c.blNo ? " (BL " + c.blNo + ")" : ""}\n`;
+      if (c.clientName) text += `👤 Client : ${c.clientName}\n`;
+      if (c.amountReceived != null) text += `💰 ${fmtAmount(c.amountReceived)}\n`;
+      if (c.note) text += `📝 ${c.note}\n`;
+      text += `\n`;
+    }
+
+    if (riskPlates.length) {
+      text += `⚠️ *Risque de détention* : ${riskPlates.join(", ")}\n`;
+    } else {
+      text += `✅ Aucun conteneur à risque de détention.\n`;
+    }
+
+    return text;
+  }
+
+  $("generate-report").addEventListener("click", () => {
+    const text = buildWhatsAppReport(lastLogRows);
+    $("report-text").value = text;
+    $("report-box").style.display = "block";
+    $("report-box").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+
+  $("copy-report").addEventListener("click", async () => {
+    const textEl = $("report-text");
+    try {
+      await navigator.clipboard.writeText(textEl.value);
+      toast("Rapport copié — collez-le dans WhatsApp");
+    } catch (err) {
+      textEl.select();
+      try {
+        document.execCommand("copy");
+        toast("Rapport copié — collez-le dans WhatsApp");
+      } catch (err2) {
+        toast("Impossible de copier automatiquement — sélectionnez le texte manuellement.", true);
+      }
+    }
   });
 
   // ---------------- Trucks tab ----------------
