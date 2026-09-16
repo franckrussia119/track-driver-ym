@@ -199,6 +199,7 @@ function filterCheckins(query) {
     const wanted = String(query.driver).trim().toLowerCase();
     rows = rows.filter((c) => (c.driver || "").trim().toLowerCase() === wanted);
   }
+  if (query.period) rows = rows.filter((c) => c.period === query.period);
   if (query.dateFrom) {
     const from = new Date(query.dateFrom + "T00:00:00").getTime();
     if (!isNaN(from)) rows = rows.filter((c) => new Date(c.timestamp).getTime() >= from);
@@ -238,6 +239,7 @@ app.post("/api/checkins", async (req, res) => {
     eirNo: (body.eirNo || "").trim(),
     location: (body.location || "").trim(),
     deadline: body.deadline || "",
+    period: body.period === "matin" || body.period === "soir" ? body.period : "",
     clientName: (body.clientName || "").trim(),
     amountReceived: amountReceived,
     note: (body.note || "").trim(),
@@ -288,14 +290,15 @@ app.get("/api/export/csv", (req, res) => {
   const rows = filterCheckins(req.query);
 
   const header = [
-    "Date/Heure", "Plaque Camion", "Chauffeur", "Statut",
+    "Date/Heure", "Periode", "Plaque Camion", "Chauffeur", "Statut",
     "N Conteneur", "N BL", "N EIR", "Lieu", "Echeance",
     "Client", "Montant Recu", "Remarque",
   ];
   const lines = [header.join(",")];
   for (const c of rows) {
     const line = [
-      c.timestamp, c.plate, c.driver,
+      c.timestamp, c.period === "matin" ? "Matin" : c.period === "soir" ? "Soir" : "",
+      c.plate, c.driver,
       STATUS_LABELS[c.status] || c.status,
       c.containerNo, c.blNo, c.eirNo, c.location, c.deadline,
       c.clientName || "",

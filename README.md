@@ -12,10 +12,14 @@ data stored in a local JSON file — no external database required.
 - **Tableau de Bord** — live table of every truck's latest status, with
   containers overdue past your detention-risk threshold highlighted in red.
 - **Historique** — look up where a truck was on any past date, plus a full
-  filterable log (by truck, driver, status, and date range) with CSV
-  export. Use the driver filter with the "7 derniers jours" / "30 derniers
-  jours" presets (or your own date range) to pull one driver's activity
+  filterable log (by truck, driver, status, période, and date range) with
+  CSV export. Use the driver filter with the "7 derniers jours" / "30
+  derniers jours" / "Aujourd'hui" presets to pull one driver's activity
   over a week, a month, or any period you choose.
+- **Rapport WhatsApp** — filter the log to the batch you want (e.g. today +
+  Matin), click "📋 Générer le Rapport WhatsApp", and get a ready-formatted
+  text summary of every truck's status, container, client and amount —
+  one click to copy, ready to paste straight into your WhatsApp group.
 - **Camions** — manage your fleet list (add/edit/deactivate trucks and
   drivers).
 
