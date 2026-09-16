@@ -11,6 +11,85 @@ const DATA_FILE = path.join(DATA_DIR, "db.json");
 
 const app = express();
 app.use(express.json());
+
+// ---------------------------------------------------------------------------
+// Authentification simple (nom d'utilisateur / mot de passe)
+// ---------------------------------------------------------------------------
+// Identifiants configurables via variables d'environnement (recommande en
+// production) ; valeurs par defaut fournies pour un demarrage immediat.
+const AUTH_USERNAME = process.env.AUTH_USERNAME || "Franck119";
+const AUTH_PASSWORD = process.env.AUTH_PASSWORD || "CT15a119";
+const SESSION_SECRET = process.env.SESSION_SECRET || "changez-ce-secret-en-production";
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 heures
+
+function signSession(payload) {
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  return data + "." + sig;
+}
+
+function verifySession(token) {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [data, sig] = parts;
+  const expected = crypto.createHmac("sha256", SESSION_SECRET).update(data).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
+    if (!payload.exp || Date.now() > payload.exp) return null;
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+function parseCookies(req) {
+  const header = req.headers.cookie;
+  const cookies = {};
+  if (!header) return cookies;
+  header.split(";").forEach((pair) => {
+    const idx = pair.indexOf("=");
+    if (idx === -1) return;
+    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+  });
+  return cookies;
+}
+
+const PUBLIC_PATHS = new Set(["/login.html", "/api/login", "/api/health"]);
+
+app.use((req, res, next) => {
+  if (PUBLIC_PATHS.has(req.path)) return next();
+  const cookies = parseCookies(req);
+  if (verifySession(cookies.session)) return next();
+  if (req.path.startsWith("/api/")) {
+    return res.status(401).json({ error: "Session expiree ou non authentifiee." });
+  }
+  return res.redirect("/login.html");
+});
+
+app.post("/api/login", (req, res) => {
+  const { username, password } = req.body || {};
+  const userOk = typeof username === "string" && username === AUTH_USERNAME;
+  const passOk = typeof password === "string" && password === AUTH_PASSWORD;
+  if (!userOk || !passOk) {
+    return res.status(401).json({ error: "Nom d'utilisateur ou mot de passe incorrect." });
+  }
+  const token = signSession({ user: username, exp: Date.now() + SESSION_TTL_MS });
+  res.setHeader(
+    "Set-Cookie",
+    `session=${encodeURIComponent(token)}; HttpOnly; Path=/; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}; SameSite=Lax`
+  );
+  res.json({ ok: true });
+});
+
+app.post("/api/logout", (req, res) => {
+  res.setHeader("Set-Cookie", "session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+  res.json({ ok: true });
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // ---------------------------------------------------------------------------

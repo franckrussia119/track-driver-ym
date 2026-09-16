@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Suivi de la Flotte &amp; des Conteneurs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f4f6f8;
@@ -21,82 +24,368 @@
     --orange-bg: #fdf0e0;
     --red: #c0392b;
     --red-bg: #fbe6e3;
+    --blue: #1a5fa8;
     --blue-bg: #e6f0fb;
+    --teal: #157569;
+    --teal-bg: #e1f5f2;
+    --purple: #6a3fa0;
+    --purple-bg: #efe6fb;
+    --amber: #8a6d1a;
+    --amber-bg: #fff6d9;
+    --slate: #55606b;
+    --slate-bg: #e8ebee;
     --shadow: 0 1px 3px rgba(20,30,40,0.08), 0 1px 2px rgba(20,30,40,0.06);
-    --radius: 10px;
+    --shadow-lg: 0 10px 30px rgba(20,30,40,0.12);
+    --radius: 12px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #12181f; --surface: #1b232c; --surface-2: #232d38; --border: #34404c;
-      --text: #e7edf3; --text-dim: #9aa8b5; --navy: #4a8fd1; --navy-dark: #3a749f;
-      --accent: #5aa2e0; --green: #55c785; --green-bg: #163524; --orange: #e0a54f;
-      --orange-bg: #3a2c14; --red: #f0796a; --red-bg: #3a1e1c; --blue-bg: #1a2c3f;
+      --bg: #12181f;
+      --surface: #1b232c;
+      --surface-2: #232d38;
+      --border: #34404c;
+      --text: #e7edf3;
+      --text-dim: #9aa8b5;
+      --navy: #4a8fd1;
+      --navy-dark: #3a749f;
+      --accent: #5aa2e0;
+      --green: #55c785;
+      --green-bg: #163524;
+      --orange: #e0a54f;
+      --orange-bg: #3a2c14;
+      --red: #f0796a;
+      --red-bg: #3a1e1c;
+      --blue: #7fb4e8;
+      --blue-bg: #1a2c3f;
+      --teal: #4fd1c0;
+      --teal-bg: #123330;
+      --purple: #b697e0;
+      --purple-bg: #2c2140;
+      --amber: #e0c454;
+      --amber-bg: #3a3315;
+      --slate: #aab4bf;
+      --slate-bg: #2a323c;
       --shadow: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.45);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #12181f; --surface: #1b232c; --surface-2: #232d38; --border: #34404c;
-    --text: #e7edf3; --text-dim: #9aa8b5; --navy: #4a8fd1; --navy-dark: #3a749f;
-    --accent: #5aa2e0; --green: #55c785; --green-bg: #163524; --orange: #e0a54f;
-    --orange-bg: #3a2c14; --red: #f0796a; --red-bg: #3a1e1c; --blue-bg: #1a2c3f;
+    --bg: #12181f;
+    --surface: #1b232c;
+    --surface-2: #232d38;
+    --border: #34404c;
+    --text: #e7edf3;
+    --text-dim: #9aa8b5;
+    --navy: #4a8fd1;
+    --navy-dark: #3a749f;
+    --accent: #5aa2e0;
+    --green: #55c785;
+    --green-bg: #163524;
+    --orange: #e0a54f;
+    --orange-bg: #3a2c14;
+    --red: #f0796a;
+    --red-bg: #3a1e1c;
+    --blue: #7fb4e8;
+    --blue-bg: #1a2c3f;
+    --teal: #4fd1c0;
+    --teal-bg: #123330;
+    --purple: #b697e0;
+    --purple-bg: #2c2140;
+    --amber: #e0c454;
+    --amber-bg: #3a3315;
+    --slate: #aab4bf;
+    --slate-bg: #2a323c;
     --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.45);
   }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; font-size:15px; line-height:1.4; }
-  header { background:var(--navy); color:#fff; padding:14px 16px 0 16px; position:sticky; top:0; z-index:10; }
-  header h1 { margin:0 0 12px 0; font-size:18px; font-weight:700; }
-  header h1 span { opacity:0.75; font-weight:400; font-size:13px; display:block; margin-top:2px; }
-  nav { display:flex; gap:2px; overflow-x:auto; }
-  nav button { background:transparent; border:none; color:rgba(255,255,255,0.75); padding:10px 14px; font-size:13.5px; font-weight:600; cursor:pointer; white-space:nowrap; border-bottom:3px solid transparent; }
-  nav button.active { color:#fff; border-bottom-color:#fff; }
-  main { max-width:980px; margin:0 auto; padding:16px; padding-bottom:60px; }
-  .section { display:none; }
-  .section.active { display:block; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:16px; box-shadow:var(--shadow); }
-  .card h2 { margin:0 0 14px 0; font-size:15px; color:var(--navy); }
-  label { display:block; font-size:12.5px; font-weight:600; color:var(--text-dim); margin:12px 0 4px 0; }
-  label:first-of-type { margin-top:0; }
-  input, select, textarea { width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:7px; background:var(--surface-2); color:var(--text); font-size:15px; font-family:inherit; }
-  textarea { resize:vertical; min-height:50px; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; }
-  .row > div { flex:1; min-width:140px; }
-  button.primary { margin-top:16px; background:var(--navy); color:#fff; border:none; border-radius:8px; padding:12px 18px; font-size:15px; font-weight:700; cursor:pointer; width:100%; }
-  button.primary:active { background:var(--navy-dark); }
-  button.secondary { background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:7px; padding:9px 14px; font-size:13.5px; font-weight:600; cursor:pointer; }
-  a.secondary { display:inline-block; text-decoration:none; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:7px; padding:9px 14px; font-size:13.5px; font-weight:600; }
-  button.small { background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:12.5px; cursor:pointer; }
-  .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--green); color:#fff; padding:10px 18px; border-radius:30px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:opacity .25s; z-index:100; }
-  .toast.show { opacity:1; }
-  .toast.error { background:var(--red); }
-  .badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:12px; font-weight:700; white-space:nowrap; }
-  .badge.risk-high { background:var(--red-bg); color:var(--red); }
-  .badge.risk-mid { background:var(--orange-bg); color:var(--orange); }
-  .badge.ok { background:var(--green-bg); color:var(--green); }
-  .badge.neutral { background:var(--surface-2); color:var(--text-dim); }
-  .table-wrap { overflow-x:auto; }
-  table { border-collapse:collapse; width:100%; font-size:13.5px; }
-  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
-  th { color:var(--text-dim); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; }
-  tr.risk-row { background:var(--red-bg); }
-  .alert-banner { background:var(--red-bg); color:var(--red); border:1px solid var(--red); border-radius:var(--radius); padding:12px 14px; margin-bottom:16px; font-size:14px; font-weight:600; }
-  .alert-banner.ok-banner { background:var(--green-bg); color:var(--green); border-color:var(--green); }
-  .muted { color:var(--text-dim); font-size:12.5px; }
-  .empty-state { text-align:center; padding:30px 10px; color:var(--text-dim); font-size:13.5px; }
-  .truck-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .truck-row:last-child { border-bottom:none; }
-  .truck-meta { font-size:13px; }
-  .truck-meta b { display:block; font-size:14.5px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 16px 16px 0 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  }
+  .header-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  header h1 {
+    margin: 0 0 12px 0;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  header h1 span { opacity: 0.75; font-weight: 400; font-size: 12.5px; display:block; margin-top:3px;}
+  #logout-btn {
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.72);
+    padding: 11px 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    border-radius: 10px 10px 0 0;
+    transition: background .15s, color .15s;
+  }
+  nav button.active {
+    color: #fff;
+    background: var(--bg);
+  }
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 18px 16px;
+    padding-bottom: 60px;
+  }
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    margin: 0 0 14px 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 14px 0 5px 0;
+  }
+  label:first-of-type { margin-top: 0; }
+  input, select, textarea {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 54px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+  @media (max-width: 480px) {
+    .row { flex-direction: column; }
+    .row > div { min-width: 0; }
+  }
+  button.primary {
+    margin-top: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--navy));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 18px;
+    font-size: 15.5px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: transform .1s, box-shadow .15s;
+    box-shadow: 0 4px 14px rgba(31,78,120,0.25);
+  }
+  button.primary:active { transform: scale(0.99); }
+  button.secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  a.secondary {
+    display: inline-block;
+    text-decoration: none;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  button.small {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  @media (hover: hover) {
+    button.secondary:hover, a.secondary:hover, button.small:hover { border-color: var(--accent); }
+  }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: #fff;
+    padding: 11px 20px;
+    border-radius: 30px;
+    font-size: 13.5px;
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .toast.error { background: var(--red); }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge.risk-high { background: var(--red-bg); color: var(--red); }
+  .badge.risk-mid { background: var(--orange-bg); color: var(--orange); }
+  .badge.ok { background: var(--green-bg); color: var(--green); }
+  .badge.info { background: var(--blue-bg); color: var(--blue); }
+  .badge.neutral { background: var(--surface-2); color: var(--text-dim); }
+  .badge.st-empty_yard { background: var(--orange-bg); color: var(--orange); }
+  .badge.st-empty_returned { background: var(--green-bg); color: var(--green); }
+  .badge.st-loaded_export { background: var(--blue-bg); color: var(--blue); }
+  .badge.st-loaded_import { background: var(--teal-bg); color: var(--teal); }
+  .badge.st-at_terminal { background: var(--purple-bg); color: var(--purple); }
+  .badge.st-in_transit { background: var(--amber-bg); color: var(--amber); }
+  .badge.st-maintenance { background: var(--slate-bg); color: var(--slate); }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td {
+    text-align: left;
+    padding: 10px 11px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+  tbody tr { transition: background .1s; }
+  @media (hover: hover) {
+    tbody tr:hover { background: var(--surface-2); }
+  }
+  tr.risk-row { background: var(--red-bg); }
+  @media (hover: hover) {
+    tr.risk-row:hover { background: var(--red-bg); }
+  }
+  .alert-banner {
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .alert-banner.ok-banner {
+    background: var(--green-bg);
+    color: var(--green);
+    border-color: var(--green);
+  }
+  .muted { color: var(--text-dim); font-size: 12.5px; }
+  .empty-state { text-align: center; padding: 34px 10px; color: var(--text-dim); font-size: 13.5px; }
+  .truck-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .truck-row:last-child { border-bottom: none; }
+  .truck-meta { font-size: 13px; }
+  .truck-meta b { display:block; font-size: 14.5px; margin-bottom: 2px; }
   .inline-form { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
-  .inline-form input, .inline-form select { flex:1; min-width:110px; }
-  .history-item { border-left:3px solid var(--border); padding:6px 0 6px 12px; margin-bottom:6px; font-size:13.5px; }
-  .history-item.match { border-left-color:var(--accent); background:var(--blue-bg); border-radius:0 6px 6px 0; padding:8px 12px; }
-  .footer-note { text-align:center; color:var(--text-dim); font-size:11.5px; margin-top:20px; }
+  .inline-form input, .inline-form select { flex: 1; min-width: 110px; }
+  .history-item { border-left: 3px solid var(--border); padding: 7px 0 7px 14px; margin-bottom: 7px; font-size: 13.5px; }
+  .history-item.match { border-left-color: var(--accent); background: var(--blue-bg); border-radius: 0 8px 8px 0; padding: 10px 14px; }
+  .footer-note { text-align:center; color: var(--text-dim); font-size:11.5px; margin-top: 20px; }
+
+  /* Cartes empilees sur mobile/tablette pour les tableaux */
+  @media (max-width: 720px) {
+    .stack-table thead { display: none; }
+    .stack-table, .stack-table tbody, .stack-table tr, .stack-table td { display: block; width: 100%; }
+    .stack-table { border: none; }
+    .stack-table tr {
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .stack-table tr.risk-row { border: 1.5px solid var(--red); }
+    .stack-table td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--surface-2);
+      white-space: normal;
+      gap: 12px;
+      text-align: right;
+    }
+    .stack-table td:last-child { border-bottom: none; }
+    .stack-table td::before {
+      content: attr(data-label);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-align: left;
+      flex-shrink: 0;
+    }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Suivi de la Flotte &amp; des Conteneurs <span>Point de contrôle du Responsable — enregistrez chaque point WhatsApp ici</span></h1>
+  <div class="header-top">
+    <h1>Suivi de la Flotte &amp; des Conteneurs <span>Point de contrôle du Responsable — enregistrez chaque point WhatsApp ici</span></h1>
+    <button id="logout-btn">Déconnexion</button>
+  </div>
   <nav id="nav">
     <button data-tab="checkin" class="active">Enregistrer un Point</button>
     <button data-tab="dashboard">Tableau de Bord</button>
@@ -181,7 +470,7 @@
     <div class="card">
       <h2>Statut actuel — tous les camions</h2>
       <div class="table-wrap">
-        <table id="dashboard-table">
+        <table id="dashboard-table" class="stack-table">
           <thead>
             <tr><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Dernière M.à J.</th><th>Échéance</th></tr>
           </thead>
@@ -215,7 +504,7 @@
         <span class="muted" id="log-count"></span>
       </div>
       <div class="table-wrap" style="margin-top:12px;">
-        <table id="log-table">
+        <table id="log-table" class="stack-table">
           <thead><tr><th>Date/Heure</th><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>BL</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Remarque</th></tr></thead>
           <tbody></tbody>
         </table>
@@ -251,13 +540,13 @@
   "use strict";
 
   const STATUS = [
-    { value: "empty_yard",     label: "Vide – À la Cour de l'Entreprise", risk: true  },
-    { value: "empty_returned", label: "Vide – Retourné au Dépôt",         risk: false },
-    { value: "loaded_export",  label: "Plein – Vers le Port",             risk: false },
-    { value: "loaded_import",  label: "Plein – Livraison Import",         risk: false },
-    { value: "at_terminal",    label: "Au Port / Terminal",               risk: false },
-    { value: "in_transit",     label: "En Transit",                       risk: false },
-    { value: "maintenance",    label: "Panne / Maintenance",              risk: false },
+    { value: "empty_yard",     label: "Vide – À la Cour de l'Entreprise", risk: true,  cls: "st-empty_yard"     },
+    { value: "empty_returned", label: "Vide – Retourné au Dépôt",         risk: false, cls: "st-empty_returned" },
+    { value: "loaded_export",  label: "Plein – Vers le Port",             risk: false, cls: "st-loaded_export"  },
+    { value: "loaded_import",  label: "Plein – Livraison Import",         risk: false, cls: "st-loaded_import"  },
+    { value: "at_terminal",    label: "Au Port / Terminal",               risk: false, cls: "st-at_terminal"    },
+    { value: "in_transit",     label: "En Transit",                       risk: false, cls: "st-in_transit"     },
+    { value: "maintenance",    label: "Panne / Maintenance",              risk: false, cls: "st-maintenance"    },
   ];
   const STATUS_MAP = Object.fromEntries(STATUS.map(s => [s.value, s]));
 
@@ -314,6 +603,10 @@
       headers: { "Content-Type": "application/json" },
       ...opts,
     });
+    if (res.status === 401) {
+      window.location.href = "/login.html";
+      throw new Error("Session expirée");
+    }
     if (!res.ok) {
       let msg = "Erreur serveur";
       try { const j = await res.json(); if (j.error) msg = j.error; } catch (e) {}
@@ -321,6 +614,11 @@
     }
     return res.status === 204 ? null : res.json();
   }
+
+  $("logout-btn").addEventListener("click", async () => {
+    try { await fetch("/api/logout", { method: "POST" }); } catch (e) {}
+    window.location.href = "/login.html";
+  });
 
   // ---------------- Tabs ----------------
   document.getElementById("nav").addEventListener("click", (e) => {
@@ -436,7 +734,7 @@
       if (info.risk) tr.className = "risk-row";
       const statusMeta = c ? STATUS_MAP[c.status] : null;
       const statusBadge = c
-        ? `<span class="badge ${info.risk ? 'risk-high' : (statusMeta && statusMeta.risk ? 'risk-mid' : 'ok')}">${statusMeta ? statusMeta.label : c.status}</span>`
+        ? `<span class="badge ${info.risk ? 'risk-high' : (statusMeta ? statusMeta.cls : 'neutral')}">${info.risk ? '⚠ ' : ''}${statusMeta ? statusMeta.label : c.status}</span>`
         : `<span class="badge neutral">Aucun point</span>`;
       let deadlineCell = "—";
       if (c && c.status === "empty_yard") {
@@ -449,15 +747,15 @@
         }
       }
       tr.innerHTML = `
-        <td><b>${escapeHtml(truck.plate)}</b></td>
-        <td>${escapeHtml(truck.driver || "—")}</td>
-        <td>${statusBadge}</td>
-        <td>${c ? escapeHtml(c.containerNo || "—") : "—"}</td>
-        <td>${c ? escapeHtml(c.clientName || "—") : "—"}</td>
-        <td>${c ? fmtAmount(c.amountReceived) : "—"}</td>
-        <td>${c ? escapeHtml(c.location || "—") : "—"}</td>
-        <td>${c ? fmtRelative(c.timestamp) : "—"}</td>
-        <td>${deadlineCell}</td>`;
+        <td data-label="Camion"><b>${escapeHtml(truck.plate)}</b></td>
+        <td data-label="Chauffeur">${escapeHtml(truck.driver || "—")}</td>
+        <td data-label="Statut">${statusBadge}</td>
+        <td data-label="Conteneur">${c ? escapeHtml(c.containerNo || "—") : "—"}</td>
+        <td data-label="Client">${c ? escapeHtml(c.clientName || "—") : "—"}</td>
+        <td data-label="Montant">${c ? fmtAmount(c.amountReceived) : "—"}</td>
+        <td data-label="Lieu">${c ? escapeHtml(c.location || "—") : "—"}</td>
+        <td data-label="Dernière M.à J.">${c ? fmtRelative(c.timestamp) : "—"}</td>
+        <td data-label="Échéance">${deadlineCell}</td>`;
       tbody.appendChild(tr);
     }
 
@@ -533,16 +831,16 @@
       const meta = STATUS_MAP[c.status];
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${fmtDateTime(c.timestamp)}</td>
-        <td>${escapeHtml(c.plate)}</td>
-        <td>${escapeHtml(c.driver || "—")}</td>
-        <td>${meta ? meta.label : c.status}</td>
-        <td>${escapeHtml(c.containerNo || "—")}</td>
-        <td>${escapeHtml(c.blNo || "—")}</td>
-        <td>${escapeHtml(c.clientName || "—")}</td>
-        <td>${fmtAmount(c.amountReceived)}</td>
-        <td>${escapeHtml(c.location || "—")}</td>
-        <td>${escapeHtml(c.note || "")}</td>`;
+        <td data-label="Date/Heure">${fmtDateTime(c.timestamp)}</td>
+        <td data-label="Camion">${escapeHtml(c.plate)}</td>
+        <td data-label="Chauffeur">${escapeHtml(c.driver || "—")}</td>
+        <td data-label="Statut"><span class="badge ${meta ? meta.cls : 'neutral'}">${meta ? meta.label : c.status}</span></td>
+        <td data-label="Conteneur">${escapeHtml(c.containerNo || "—")}</td>
+        <td data-label="BL">${escapeHtml(c.blNo || "—")}</td>
+        <td data-label="Client">${escapeHtml(c.clientName || "—")}</td>
+        <td data-label="Montant">${fmtAmount(c.amountReceived)}</td>
+        <td data-label="Lieu">${escapeHtml(c.location || "—")}</td>
+        <td data-label="Remarque">${escapeHtml(c.note || "")}</td>`;
       tbody.appendChild(tr);
     }
     // Garder le lien d'export cohérent avec les filtres actifs

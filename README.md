@@ -16,6 +16,24 @@ data stored in a local JSON file — no external database required.
 - **Camions** — manage your fleet list (add/edit/deactivate trucks and
   drivers).
 
+## Login
+
+The app is now protected by a username/password login screen.
+
+- **Default username:** `Franck119`
+- **Default password:** `CT15a119`
+
+**Change these before exposing the app publicly.** Set them via environment
+variables in Coolify (Application → Environment Variables):
+
+- `AUTH_USERNAME` — your chosen username
+- `AUTH_PASSWORD` — your chosen password
+- `SESSION_SECRET` — any long random string (used to sign login sessions;
+  changing it logs everyone out)
+
+Sessions last 12 hours, after which you'll need to log in again. There's a
+"Déconnexion" (logout) button in the top-right of the app.
+
 ## Running locally
 
 ```bash
@@ -68,9 +86,8 @@ the commands above.)
 - There's a soft cap of 20,000 check-ins (oldest are trimmed automatically)
   to keep the file small; export to CSV periodically if you want to keep
   full history long-term.
-- No login/auth is built in — anyone who can reach the URL can read and
-  write data. If you expose this outside a private network, put it behind
-  Coolify's built-in basic auth or a reverse-proxy auth layer, or add your
-  own login before making it internet-facing.
+- Login is a single shared username/password (see the Login section above),
+  not per-user accounts — fine for a small team sharing one tool, not
+  meant for many distinct logins with different permissions.
 - The dashboard refreshes automatically every 15 seconds; it's not
   real-time push, just polling, which is enough for this use case.
