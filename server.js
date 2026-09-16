@@ -119,6 +119,11 @@ app.post("/api/checkins", async (req, res) => {
     return res.status(400).json({ error: "truckId et status sont requis." });
   }
   const truck = db.trucks.find((t) => t.id === body.truckId);
+  let amountReceived = null;
+  if (body.amountReceived !== undefined && body.amountReceived !== null && body.amountReceived !== "") {
+    const n = Number(body.amountReceived);
+    amountReceived = isNaN(n) ? null : n;
+  }
   const checkin = {
     id: crypto.randomUUID(),
     truckId: body.truckId,
@@ -126,9 +131,12 @@ app.post("/api/checkins", async (req, res) => {
     driver: truck ? truck.driver : "",
     status: body.status,
     containerNo: (body.containerNo || "").trim().toUpperCase(),
+    blNo: (body.blNo || "").trim().toUpperCase(),
     eirNo: (body.eirNo || "").trim(),
     location: (body.location || "").trim(),
     deadline: body.deadline || "",
+    clientName: (body.clientName || "").trim(),
+    amountReceived: amountReceived,
     note: (body.note || "").trim(),
     timestamp: new Date().toISOString(),
   };
@@ -181,14 +189,17 @@ app.get("/api/export/csv", (req, res) => {
 
   const header = [
     "Date/Heure", "Plaque Camion", "Chauffeur", "Statut",
-    "N Conteneur", "N EIR", "Lieu", "Echeance", "Remarque",
+    "N Conteneur", "N BL", "N EIR", "Lieu", "Echeance",
+    "Client", "Montant Recu", "Remarque",
   ];
   const lines = [header.join(",")];
   for (const c of rows) {
     const line = [
       c.timestamp, c.plate, c.driver,
       STATUS_LABELS[c.status] || c.status,
-      c.containerNo, c.eirNo, c.location, c.deadline,
+      c.containerNo, c.blNo, c.eirNo, c.location, c.deadline,
+      c.clientName || "",
+      c.amountReceived != null ? c.amountReceived : "",
       (c.note || "").replace(/\n/g, " "),
     ].map((v) => `"${String(v || "").replace(/"/g, '""')}"`).join(",");
     lines.push(line);

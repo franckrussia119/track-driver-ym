@@ -124,6 +124,10 @@
             <input id="ci-container" type="text" placeholder="ex. MSKU1234567" autocapitalize="characters">
           </div>
           <div>
+            <label>N° BL</label>
+            <input id="ci-bl" type="text" placeholder="ex. MAEU123456789" autocapitalize="characters">
+          </div>
+          <div>
             <label>N° EIR (optionnel)</label>
             <input id="ci-eir" type="text" placeholder="ex. EIR-000452">
           </div>
@@ -136,6 +140,20 @@
         <div id="deadline-wrap" style="display:none;">
           <label>À retourner avant le (échéance de franchise)</label>
           <input id="ci-deadline" type="date">
+        </div>
+
+        <div id="client-wrap" style="display:none;">
+          <div class="row">
+            <div>
+              <label>Nom du Client</label>
+              <input id="ci-client" type="text" placeholder="ex. Société XYZ" list="client-suggestions">
+              <datalist id="client-suggestions"></datalist>
+            </div>
+            <div>
+              <label>Montant Reçu (FCFA)</label>
+              <input id="ci-amount" type="number" min="0" step="1" placeholder="ex. 150000">
+            </div>
+          </div>
         </div>
 
         <label>Remarque (optionnel)</label>
@@ -165,7 +183,7 @@
       <div class="table-wrap">
         <table id="dashboard-table">
           <thead>
-            <tr><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>Lieu</th><th>Dernière M.à J.</th><th>Échéance</th></tr>
+            <tr><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Dernière M.à J.</th><th>Échéance</th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -198,7 +216,7 @@
       </div>
       <div class="table-wrap" style="margin-top:12px;">
         <table id="log-table">
-          <thead><tr><th>Date/Heure</th><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>Lieu</th><th>Remarque</th></tr></thead>
+          <thead><tr><th>Date/Heure</th><th>Camion</th><th>Chauffeur</th><th>Statut</th><th>Conteneur</th><th>BL</th><th>Client</th><th>Montant</th><th>Lieu</th><th>Remarque</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -279,6 +297,11 @@
     return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   }
 
+  function fmtAmount(n) {
+    if (n === null || n === undefined || n === "") return "—";
+    return Number(n).toLocaleString("fr-FR") + " FCFA";
+  }
+
   function fmtDateTime(iso) {
     if (!iso) return "—";
     const d = new Date(iso);
@@ -328,21 +351,29 @@
   }
 
   // ---------------- Check-in form ----------------
+  const CLIENT_STATUSES = ["loaded_export", "loaded_import"];
+
   $("ci-status").addEventListener("change", () => {
-    $("deadline-wrap").style.display = $("ci-status").value === "empty_yard" ? "block" : "none";
+    const val = $("ci-status").value;
+    $("deadline-wrap").style.display = val === "empty_yard" ? "block" : "none";
+    $("client-wrap").style.display = CLIENT_STATUSES.includes(val) ? "block" : "none";
   });
 
   $("checkin-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const truckId = $("ci-truck").value;
     if (!truckId) { toast("Ajoutez d'abord un camion.", true); return; }
+    const status = $("ci-status").value;
     const data = {
       truckId,
-      status: $("ci-status").value,
+      status,
       containerNo: $("ci-container").value.trim(),
+      blNo: $("ci-bl").value.trim(),
       eirNo: $("ci-eir").value.trim(),
       location: $("ci-location").value.trim(),
-      deadline: $("ci-status").value === "empty_yard" ? ($("ci-deadline").value || "") : "",
+      deadline: status === "empty_yard" ? ($("ci-deadline").value || "") : "",
+      clientName: CLIENT_STATUSES.includes(status) ? $("ci-client").value.trim() : "",
+      amountReceived: CLIENT_STATUSES.includes(status) && $("ci-amount").value !== "" ? Number($("ci-amount").value) : null,
       note: $("ci-note").value.trim(),
     };
     try {
@@ -350,6 +381,7 @@
       toast("Point enregistré");
       $("checkin-form").reset();
       $("deadline-wrap").style.display = "none";
+      $("client-wrap").style.display = "none";
       populateStatusSelects();
       await refreshCheckins();
     } catch (err) {
@@ -421,6 +453,8 @@
         <td>${escapeHtml(truck.driver || "—")}</td>
         <td>${statusBadge}</td>
         <td>${c ? escapeHtml(c.containerNo || "—") : "—"}</td>
+        <td>${c ? escapeHtml(c.clientName || "—") : "—"}</td>
+        <td>${c ? fmtAmount(c.amountReceived) : "—"}</td>
         <td>${c ? escapeHtml(c.location || "—") : "—"}</td>
         <td>${c ? fmtRelative(c.timestamp) : "—"}</td>
         <td>${deadlineCell}</td>`;
@@ -465,7 +499,10 @@
         <b>${escapeHtml(truck ? truck.plate : "")}</b> — au ${fmtDateTime(match.timestamp)}<br>
         Statut : <b>${meta ? meta.label : match.status}</b><br>
         Conteneur : ${escapeHtml(match.containerNo || "—")} ${match.eirNo ? "(EIR " + escapeHtml(match.eirNo) + ")" : ""}<br>
+        BL : ${escapeHtml(match.blNo || "—")}<br>
         Lieu : ${escapeHtml(match.location || "—")}
+        ${match.clientName ? "<br>Client : " + escapeHtml(match.clientName) : ""}
+        ${match.amountReceived != null ? "<br>Montant Reçu : " + fmtAmount(match.amountReceived) : ""}
         ${match.note ? "<br>Remarque : " + escapeHtml(match.note) : ""}
       </div>`;
     } else {
@@ -501,6 +538,9 @@
         <td>${escapeHtml(c.driver || "—")}</td>
         <td>${meta ? meta.label : c.status}</td>
         <td>${escapeHtml(c.containerNo || "—")}</td>
+        <td>${escapeHtml(c.blNo || "—")}</td>
+        <td>${escapeHtml(c.clientName || "—")}</td>
+        <td>${fmtAmount(c.amountReceived)}</td>
         <td>${escapeHtml(c.location || "—")}</td>
         <td>${escapeHtml(c.note || "")}</td>`;
       tbody.appendChild(tr);
@@ -515,6 +555,8 @@
   $("log-status-filter").addEventListener("change", renderLogTable);
 
   // ---------------- Trucks tab ----------------
+  let editingTruckId = null;
+
   function renderTrucksList() {
     const box = $("trucks-list");
     if (trucks.length === 0) { box.innerHTML = `<p class="muted">Aucun camion pour le moment. Ajoutez votre flotte ci-dessous.</p>`; return; }
@@ -522,15 +564,39 @@
     trucks.slice().sort((a,b) => (a.active === false ? 1 : 0) - (b.active === false ? 1 : 0)).forEach(t => {
       const row = document.createElement("div");
       row.className = "truck-row";
-      row.innerHTML = `
-        <div class="truck-meta">
-          <b>${escapeHtml(t.plate)} ${t.active === false ? '<span class="badge neutral">inactif</span>' : ''}</b>
-          ${escapeHtml(t.driver || "chauffeur non défini")} · ${escapeHtml(t.contractor || "—")}
-        </div>
-        <div style="display:flex; gap:6px;">
-          <button class="small" data-act="edit" data-id="${t.id}">Modifier</button>
-          <button class="small" data-act="toggle" data-id="${t.id}">${t.active === false ? "Réactiver" : "Désactiver"}</button>
-        </div>`;
+      if (editingTruckId === t.id) {
+        row.style.flexDirection = "column";
+        row.style.alignItems = "stretch";
+        row.innerHTML = `
+          <div class="row" style="margin-bottom:4px;">
+            <div>
+              <label>N° Plaque</label>
+              <input type="text" data-field="plate" value="${escapeHtml(t.plate)}">
+            </div>
+            <div>
+              <label>Nom du Chauffeur</label>
+              <input type="text" data-field="driver" value="${escapeHtml(t.driver || "")}">
+            </div>
+            <div>
+              <label>Sous-traitant</label>
+              <input type="text" data-field="contractor" value="${escapeHtml(t.contractor || "")}">
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="secondary" data-act="save-edit" data-id="${t.id}">Enregistrer</button>
+            <button class="small" data-act="cancel-edit" data-id="${t.id}">Annuler</button>
+          </div>`;
+      } else {
+        row.innerHTML = `
+          <div class="truck-meta">
+            <b>${escapeHtml(t.plate)} ${t.active === false ? '<span class="badge neutral">inactif</span>' : ''}</b>
+            ${escapeHtml(t.driver || "chauffeur non défini")} · ${escapeHtml(t.contractor || "—")}
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="small" data-act="edit" data-id="${t.id}">Modifier</button>
+            <button class="small" data-act="toggle" data-id="${t.id}">${t.active === false ? "Réactiver" : "Désactiver"}</button>
+          </div>`;
+      }
       box.appendChild(row);
     });
   }
@@ -541,22 +607,32 @@
     const id = btn.dataset.id;
     const truck = trucks.find(t => t.id === id);
     if (!truck) return;
+
     if (btn.dataset.act === "toggle") {
       try {
         await api("/api/trucks/" + id, { method: "PUT", body: JSON.stringify({ active: truck.active === false ? true : false }) });
         toast("Mis à jour");
         await refreshTrucks();
       } catch (err) { toast("Échec de la mise à jour", true); }
+
     } else if (btn.dataset.act === "edit") {
-      const plate = prompt("N° Plaque :", truck.plate);
-      if (plate === null) return;
-      const driver = prompt("Nom du Chauffeur :", truck.driver || "");
-      if (driver === null) return;
-      const contractor = prompt("Sous-traitant :", truck.contractor || "");
-      if (contractor === null) return;
+      editingTruckId = id;
+      renderTrucksList();
+
+    } else if (btn.dataset.act === "cancel-edit") {
+      editingTruckId = null;
+      renderTrucksList();
+
+    } else if (btn.dataset.act === "save-edit") {
+      const row = btn.closest(".truck-row");
+      const plate = row.querySelector('[data-field="plate"]').value.trim();
+      const driver = row.querySelector('[data-field="driver"]').value.trim();
+      const contractor = row.querySelector('[data-field="contractor"]').value.trim();
+      if (!plate) { toast("Le numéro de plaque est requis.", true); return; }
       try {
-        await api("/api/trucks/" + id, { method: "PUT", body: JSON.stringify({ plate: plate.trim(), driver: driver.trim(), contractor: contractor.trim() }) });
+        await api("/api/trucks/" + id, { method: "PUT", body: JSON.stringify({ plate, driver, contractor }) });
         toast("Enregistré");
+        editingTruckId = null;
         await refreshTrucks();
       } catch (err) { toast("Échec de l'enregistrement", true); }
     }
@@ -577,10 +653,16 @@
 
   // ---------------- Suggestions de lieux ----------------
   function refreshLocationSuggestions() {
-    const set = new Set();
-    checkins.forEach(c => { if (c.location) set.add(c.location); });
-    $("location-suggestions").innerHTML = Array.from(set).slice(0, 20)
+    const locSet = new Set();
+    const clientSet = new Set();
+    checkins.forEach(c => {
+      if (c.location) locSet.add(c.location);
+      if (c.clientName) clientSet.add(c.clientName);
+    });
+    $("location-suggestions").innerHTML = Array.from(locSet).slice(0, 20)
       .map(loc => `<option value="${escapeHtml(loc)}"></option>`).join("");
+    $("client-suggestions").innerHTML = Array.from(clientSet).slice(0, 20)
+      .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
   }
 
   // ---------------- Chargement des données ----------------
