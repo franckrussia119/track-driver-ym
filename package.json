@@ -1,0 +1,16 @@
+{
+  "name": "suivi-flotte-conteneurs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Suivi des positions de la flotte et des conteneurs pour eviter les detentions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
